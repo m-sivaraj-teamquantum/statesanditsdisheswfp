@@ -1,0 +1,5926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dish Bot - Water Footprint Calculator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #C8102E; /* Red background */
+            color: #fff;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #000000; /* Black background for container */
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); /* Darker shadow for more contrast */
+        }
+
+        h1 {
+            text-align: center;
+            color: #C8102E; /* Reddish color for the heading */
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 5px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+            font-size: 1em;
+            background-color: #333; /* Black background for inputs */
+            color: #fff; /* White text color for inputs */
+        }
+
+        select {
+            max-height: 150px; /* Set maximum height */
+            overflow-y: auto; /* Enable vertical scroll */
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #C8102E; /* Reddish button */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #results {
+            text-align: center;
+        }
+
+        #chartContainer {
+            margin-top: 20px;
+            position: relative;
+            height: 400px;
+            width: 400px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dish Bot - Water Footprint Calculator</h1>
+        <form id="dishForm">
+            <label for="state">Select your state:</label>
+            <select id="state" name="state">
+                <option value="" disabled selected>Select a state</option>
+            </select>
+
+            <label for="dish">Select your dish name:</label>
+            <select id="dish" name="dish" disabled>
+                <option value="" disabled selected>Select a dish</option>
+            </select>
+
+            <label for="quantity">Enter quantity (in kg):</label>
+            <input type="number" id="quantity" name="quantity" min="0.1" step="0.1" required>
+
+            <button type="submit">Calculate</button>
+        </form>
+
+        <div id="results" class="hidden">
+            <h2>Water Footprint Results</h2>
+            <p>Green Water: <span id="greenWater"></span> liters</p>
+            <p>Blue Water: <span id="blueWater"></span> liters</p>
+            <p>Grey Water: <span id="greyWater"></span> liters</p>
+            <p>Total Water: <span id="totalWater"></span> liters</p>
+
+            <div id="chartContainer">
+                <canvas id="chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const states = {
+                "andhra pradesh": {
+                    "Hyderabadi Biryani": { "green_water": 100, "blue_water": 400, "grey_water": 400 },
+                    "Andhra Chicken Curry": { "green_water": 100, "blue_water": 400, "grey_water": 400 },
+                    "Pesarattu": { "green_water": 50, "blue_water": 350, "grey_water": 350 },
+                    "Bobbatlu": { "green_water": 100, "blue_water": 400, "grey_water": 400 },
+                    "Pootharekulu": { "green_water": 50, "blue_water": 350, "grey_water": 350 },
+                "Kakinada Kaja": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Ariselu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Mirchi Bajji": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Punugulu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Garijalu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Jonna Kudu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Saggubiyyam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Ulava Charu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Challa Charu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Majjiga Pulusu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Allam Pachadi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Gongura Pachadi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Avakaya": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Andhra Kodi Vepudu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chepala Pulusu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Nellore Chepala Pulusu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kurnool Kodi Kura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Anantapur Kodi Kura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rayalaseema Ruchulu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Andhra Mutton Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Hyderabadi Haleem": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Qubani Ka Meetha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Double Ka Meetha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Andhra Laddu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Boorelu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kajjikaya": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sunnundalu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Andhra Jilebi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Gavvalu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Andhra Vada": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Punugulu with Chutney": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bobbatlu with Chutney": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pesarattu with Chutney": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Andhra Dosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+}
+                },
+                "arunachal pradesh": {
+                    "Thukpa": { "green_water": 100, "blue_water": 400, "grey_water": 400 },
+                    "Momo": { "green_water": 100, "blue_water": 400, "grey_water": 400 },
+                    "Apong": { "green_water": 50, "blue_water": 350, "grey_water": 350 },
+                    "Kharzi": { "green_water": 100, "blue_water": 400, "grey_water": 400 },
+                    "Lukter": { "green_water": 50, "blue_water": 350, "grey_water": 350 },
+                
+                "Chura Sabji": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Pika Pila": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Bamboo Shoot Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Drukpa's Delight": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Smoked Pork": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chhurpi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Shapta": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Gyuma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mokto": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Aku": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chhurpi Soup": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pika Chutney": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Bamboo Shoot Soup": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chura Chutney": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Thukpa with Vegetables": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+
+"Momo with Chutney": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Apong with Meat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kharzi with Vegetables": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Lukter with Chutney": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chura Sabji with Meat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pika Pila with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bamboo Shoot with Meat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Drukpa's Delight with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Smoked Pork with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chhurpi with Tea": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Shapta with Vegetables": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Gyuma with Meat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mokto with Chutney": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aku with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chhurpi Soup with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pika Chutney with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bamboo Shoot Soup with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chura Chutney with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Thukpa with Meat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400}
+},
+"assam" : 
+			
+{
+"Jol Muri": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Pitha": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Laru": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Masor Tenga": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aloo Pitika": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Bhendis Sorsori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Khar": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Dal": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Misa Mach": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sorsori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chutney": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Pickle": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Pani Tenga": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Veg Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Non-Veg Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jol Bhartal": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Aloo Bhartal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhindi Bhartal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Karela Bhartal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Baingan Bhartal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Masor Bhartal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Fried Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Veg Fried Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Egg Fried Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jol Muri with Chutney": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pitha with Laru": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Masor Tenga with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aloo Pitika with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhendis Sorsori with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Khar with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Dal with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Misa Mach with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sorsori with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chutney with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pickle with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pani Tenga with Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+}
+},
+				
+"bihar" :				
+
+{
+"Litti Chokha": {
+"green_water": 150,
+"blue_water": 450,
+"grey_water": 450
+},
+"Jalebi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Samosa": {
+"green_water": 150,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kachori": {
+"green_water": 120,
+"blue_water": 350,
+"grey_water": 350
+},
+"Bhelpuri": {
+"green_water": 110,
+"blue_water": 320,
+"grey_water": 320
+},
+"Aloo Gobhi": {
+"green_water": 130,
+"blue_water": 380,
+"grey_water": 380
+},
+"Baingan Bharta": {
+"green_water": 140,
+"blue_water": 400,
+"grey_water": 400
+},
+"Dal Pitha": {
+"green_water": 150,
+"blue_water": 450,
+"grey_water": 450
+},
+"Khichdi": {
+"green_water": 120,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kadhi Bari": {
+"green_water": 140,
+"blue_water": 400,
+"grey_water": 400
+},
+"Ghugni": {
+"green_water": 130,
+"blue_water": 380,
+"grey_water": 380
+},
+"Sattu Paratha": {
+"green_water": 140,
+"blue_water": 400,
+"grey_water": 400
+},
+"Makka Roti": {
+"green_water": 120,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sarson Ka Saag": {
+"green_water": 150,
+"blue_water": 450,
+"grey_water": 450
+},
+"Tarkari Jhol": {
+"green_water": 140,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bharta": {
+"green_water": 130,
+"blue_water": 380,
+"grey_water": 380
+},
+"Chana Masala": {
+"green_water": 140,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Masala": {
+"green_water": 150,
+"blue_water": 450,
+"grey_water": 450
+},
+"Aloo Matar": {
+"green_water": 130,
+"blue_water": 380,
+"grey_water": 380
+},
+"Gobhi Aloo": {
+"green_water": 140,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 150,
+"blue_water": 450,
+"grey_water": 450
+},
+"Palak Paneer": {
+"green_water": 140,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chole Bhature": {
+"green_water": 160,
+"blue_water": 480,
+"grey_water": 480
+},
+"Dahi Vada": {
+"green_water": 130,
+"blue_water": 380,
+"grey_water": 380
+},
+"Raj Kachori": {
+"green_water": 140,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pyaaz Kachori": {
+"green_water": 140,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aloo Tikki": {
+"green_water": 130,
+"blue_water": 380,
+"grey_water": 380
+},
+"Chana Jor Garam": {
+"green_water": 140,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sagu Aloo": {
+"green_water": 130,
+"blue_water": 380,
+"grey_water": 380
+},
+"Baati Chokha": {
+"green_water": 150,
+"blue_water": 450,
+"grey_water": 450
+},
+"Litti with Chicken": {
+"green_water": 200,
+"blue_water": 500,
+"grey_water": 500
+},
+"Jalebi with Rabri": {
+"green_water": 150,
+"blue_water": 350,
+"grey_water": 350
+},
+"Samosa with Chutney": {
+"green_water": 150,
+"blue_water": 450,
+"grey_water": 450
+},
+"Kachori with Aloo Sabzi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhelpuri with Tamarind Chutney": {
+"green_water": 120,
+"blue_water": 380,
+"grey_water": 380
+},
+"Aloo Gobhi with Paratha": {
+"green_water": 150,
+"blue_water": 450,
+"grey_water": 450
+},
+"Baingan Bharta with Roti": {
+"green_water": 60,
+"blue_water": 120,
+"grey_water": 120
+},
+"Dal Pitha with Ghee": {
+"green_water": 80,
+"blue_water": 150,
+"grey_water": 150
+},
+"Khichdi with Papad": {
+"green_water": 50,
+"blue_water": 100,
+"grey_water": 100
+},
+"Kadhi Bari with Rice": {
+"green_water": 100,
+"blue_water": 180,
+"grey_water": 180}
+},
+
+
+"chhattisgarh":				
+
+{
+"Bafauri": {
+"green_water": 150,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chousela": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Dubuk Wadi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aamat": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chila": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Muthia": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Thethari": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Khurmi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhajia": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chhattisgarhi Thali": {
+"green_water": 50,
+"blue_water": 450,
+"grey_water": 450
+},
+"Kusli": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Imlia": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chilka Roti": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Padi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Basi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chhattisgarhi Kadhi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jhola": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Aamti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chilka Dal": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Pej": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Bhatia": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chhattisgarhi Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Murga Korma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Machhli Jhol": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chilka Roti with Dal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Padi with Aamat": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Basi with Chilka": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chhattisgarhi Mutton Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chhattisgarhi Chicken Tikka": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Tikka": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chilka Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatia with Aamat": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhattisgarhi Vegetable Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chilka Pulao": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Murga Musallam": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chhattisgarhi Mutton Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+}
+},
+
+
+
+"goa" :	
+
+			
+{
+"Fish Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Balchao": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Xacuti": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bebinca": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Vindaloo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Feijoada": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Calulu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Arroz Doce": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Feni": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Dodol": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kokum Juice": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Sol Kadhi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Goan Prawn Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Crab Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mackerel Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Tisryo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Goan Chicken Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pao Bhaji": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Goan Sausage": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bafat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kismur": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Goan Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Recheado": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Cafreal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Goan Vegetable Stew": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Dalithoy": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Goan Prawn Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Amok": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Goan Chicken Tikka": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Goan Fish Tikka": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Crab Tikka": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Goan Vegetable Tikka": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pao": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Goan Bread": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Bolinhos": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Goan Prawn Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Goan Fish Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+}
+},
+
+				
+"gujarat"	:		
+
+
+{
+"Undhiyu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Gujarati Kadhi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Khichdi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Dal Dhokli": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Handvo": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Dhokla": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Khaman": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Fafda": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jalebi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Shrikhand": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Gujarati Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bajre ki Roti": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Makki ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Thepla": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Methi na Thepla": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Bhakri": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Puri": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sabzi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Ringan no Oro": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Batata nu Shaak": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Gujarati Rasoi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Khatta Meetha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aam ka Achaar": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chundo": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Fafda with Jalebi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Handvo with Chutney": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Gujarati Misal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Locho": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Keri no Ras": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Gujarati Poha": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sev Usal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Gujarati Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Farcha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Korma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Gujarati Chicken Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Gujarati Mutton Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+}
+},
+
+
+
+				
+				
+"hariyana"			:	
+
+{
+"Kadhi Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bajre ki Roti": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Sarson ka Saag": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Makki ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Haryanvi Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Dal Makhani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Baingan Bharta": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Aloo Gobhi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Haryanvi Kadhi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhajia": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chutney": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Raita": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Haryanvi Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Korma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Haryanvi Chicken Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Haryanvi Vegetable Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Jor Garam": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aloo Tikki": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Chawal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Haryanvi Dal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bajre ki Khichdi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Haryanvi Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Haryanvi Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Haryanvi Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Haryanvi Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+}
+},
+
+
+				
+"himachal pradesh"	:
+
+		
+{
+"Dhaam": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sidu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Babru": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhey": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Tudkiya Bhath": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Madra": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sarson Ka Saag": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Makki Ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Himachali Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kaddu Ka Khatta": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mahani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chha Gosht": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Auriya Kaddu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Gucchi Mattar": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bada": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Himachali Kadhi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Raita": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chutney": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Pickle": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Himachali Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Anardana": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Rara": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pahadi Chicken": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Trout Fish": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Himachali Chicken Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Himachali Vegetable Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sattu Ka Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Himachali Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Himachali Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Himachali Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Himachali Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+}
+},
+
+
+				
+				
+"jarkhand"	:		
+
+
+{
+"Dhuska": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jharkhandi Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aloo Pitika": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Baingan Bharta": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Dal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Dudhauri": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Handia": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Jharkhandi Kadhi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kachchu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Malpua": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mitha Khaja": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pitha": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Raghugiri": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sabudana Khichdi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Til Barfi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jharkhandi Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jharkhandi Chicken Tikka": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Tikka": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jharkhandi Vegetable Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Jor Garam": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aloo Tikki": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Chawal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jharkhandi Dal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bajre ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Jharkhandi Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jharkhandi Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jharkhandi Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jharkhandi Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jharkhandi Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+}
+},
+
+
+				
+				
+				
+"karanataka" :				
+
+
+{
+"Bisi Bele Bath": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jolada Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Akki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Ragi Mudde": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Idli": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Vada": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sambar": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chutney": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Rasam": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Karnataka Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Neer Dosa": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sagu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Enne Gadde": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kaai Holige": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kadubu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Mysore Pak": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Shavige": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Davangere Benne Dosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Karnataka Vegetable Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Jor Garam": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aloo Tikki": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Chawal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Karnataka Dal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bajre ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Karnataka Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Karnataka Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Karnataka Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Karnataka Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Karnataka Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Poori": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+}
+},
+
+				
+				
+"kerala"	:			
+
+{
+"Sadya": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Idiyappam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Appam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Puttu": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Kadala Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sambar": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Avial": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Olan": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Pachadi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kerala Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Erissery": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mathan Erissery": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Parippu Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rasam": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Pulissery": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Karal": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Thoran": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Meen Moilee": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Beef Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kerala Vegetable Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Jor Garam": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aloo Tikki": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Chawal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kerala Dal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bajre ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kerala Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Kerala Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kerala Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kerala Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kerala Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Poori": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+}
+},
+
+				
+"madhya pradesh"			:	
+
+{
+"Bhutte Ka Kees": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Dal Bafla": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sabudana Khichdi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rogan Josh": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhopali Gosht Korma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Malpua": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jalebi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Imarti": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Madhya Pradesh Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sarson Ka Saag": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Makki Ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Gobhi Aloo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Korma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Madhya Pradesh Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Jor Garam": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aloo Tikki": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Chawal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Madhya Pradesh Dal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bajre ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Madhya Pradesh Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Madhya Pradesh Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Madhya Pradesh Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Madhya Pradesh Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Madhya Pradesh Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Poori": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+}
+},
+
+
+				
+"maharastra	" 	:		
+
+
+{
+"Misal Pav": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Vada Pav": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pav Bhaji": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhelpuri": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Pani Puri": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Maharashtrian Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Varan": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Amti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kadhi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sukka Mutton": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Shrikhand": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Modak": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Puran Poli": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sabudana Khichdi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Batata Vada": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kothimbir Vadi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Maharashtrian Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sarson Ka Saag": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Makki Ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Gobhi Aloo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Korma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Maharashtrian Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Maharashtrian Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Maharashtrian Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Maharashtrian Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+}
+},
+				
+				
+"manipur" :	
+
+{
+"Eromba": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Singju": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Morok Metpa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chamthong": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Manipuri Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kangsoi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Paaknam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Ooti": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Keli Chana": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Bora": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Thongba": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Iromba": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chak-hao Kheer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Manipuri Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sarson Ka Saag": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Makki Ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Gobhi Aloo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Korma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Manipuri Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Manipuri Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Manipuri Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Manipuri Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Manipuri Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Poori": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Manipuri Pongal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sana Thongba": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Nga-Thongba": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+}
+},
+
+				
+"megalaya" :				
+
+{
+"Jadoh": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Ki Kpu": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Dohkhlieh": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Nakham Bitchi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Meghalayan Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pumaloi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Minil Songa": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sakin Gata": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Doh Syiar": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Bitchi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jastem": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Doh Masi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Pudoh": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Meghalayan Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sarson Ka Saag": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Makki Ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Gobhi Aloo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Korma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Meghalayan Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Meghalayan Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Meghalayan Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Meghalayan Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Meghalayan Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Poori": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+}
+},
+
+				
+"mizoram" :				
+
+{
+"Bai": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Vawksa Rep": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Misa Mach Poora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Hmarcha Rawt": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Mizoram Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Koat Pitha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sanpui": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Arsa Buhchiar": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Bekang Utpa": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chhum Han": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Mizo Vawksa": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Panch Phoron": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Mizo Dal": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Mizoram Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sarson Ka Saag": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Makki Ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Gobhi Aloo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Korma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mizoram Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Mizoram Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mizoram Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mizoram Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mizoram Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Poori": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+}
+},
+
+				
+"nagaland" :				
+
+{
+"Smoked Pork with Akhuni": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Anishi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Nagaland Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Galho": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Zutho": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kikwi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Axone with Steamed Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Nagaland Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sarson Ka Saag": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Makki Ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Gobhi Aloo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Korma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Nagaland Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Nagaland Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Nagaland Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Nagaland Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Nagaland Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Poori": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Nagaland Pongal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Akhuni with Steamed Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Khorisa": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+}
+},
+"Punjabi" :				
+
+
+{
+"Makki Di Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sarson Ka Saag": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Dal Makhani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aloo Gobhi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Chawal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kadhi Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Baingan Bharta": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Tinda Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Amritsari Kulcha": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Saag Aloo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chole Bhature": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Dhaba-Style Dal Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Gajar Ka Halwa": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Jalebi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Kachoris": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Tandoori Chicken": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+}
+},
+
+
+				
+"Rajasthan" :			
+
+{
+"Dal Baati Churma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Missi Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Garlic Chutney": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Onion Chutney": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Rajasthani Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Gatte Ki Sabzi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Ker Sangri": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Lauki Ki Sabzi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Churma": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Baati": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Dal": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Rajasthani Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Korma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajasthani Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Rajasthani Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajasthani Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajasthani Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajasthani Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Poori": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Rajasthani Pongal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kadhi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Rajasthani Dal": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Mixed Vegetable Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Egg Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Rogan Josh": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajasthani Jhol": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Besan Ki Sabzi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Gavarfali Ki Sabzi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+}
+},
+
+
+				
+"Sikkim"   :				
+
+
+{
+"Momo": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Thukpa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Wonton Soup": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Gundruk Soup": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sikkimese Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Phagshapa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pakku": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sinki": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chhurpi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Shapaley": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Laphu": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Sikkimese Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Momo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Phagshapa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Thukpa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sikkimese Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Sikkimese Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sikkimese Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sikkimese Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sikkimese Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Poori": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sikkimese Pongal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Selroti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kwati": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sikkimese Dal": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Mixed Vegetable Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Egg Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Rogan Josh": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sikkimese Jhol": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+}},
+				
+		 		
+"Tamil Nadu" :
+				
+{
+"Idli": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Dosa": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sambar": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chutney": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Tamil Nadu Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pongal": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Vada": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sambhar Vada": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rasam": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Kootu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Porial": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Avial": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Oothappam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Appam": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Idiyappam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Tamil Nadu Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken 65": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Korma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Tamil Nadu Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Tamil Nadu Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Tamil Nadu Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Tamil Nadu Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Tamil Nadu Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Poori": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Tamil Nadu Pongal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kesari": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Tamil Nadu Dal": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Mixed Vegetable Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Egg Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Rogan Josh": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+}
+},
+
+				
+		 		
+"Telangana"				:
+
+{
+"Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Haleem": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kebab": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Qubani Ka Meetha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Telangana Thali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pesarattu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Upma": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Dosa": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Vada": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Idli": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Sambar": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chutney": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Rasam": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Pongal": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Garelu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Bobbatlu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Laddu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Telangana Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chhach": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jal Jeera": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Telangana Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Golgappe": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Telangana Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Telangana Pakora": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatura": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Telangana Paratha": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Poori": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Telangana Pongal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sakinalu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Telangana Dal": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Mixed Vegetable Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Egg Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Rogan Josh": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Prawn Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Telangana Jhol": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Gongura Pachadi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+}},
+
+				
+		 		
+"Uttar Pradesh" :		 		
+
+
+{
+"Tunday Kebab": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Lucknowi Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Galouti Kebab": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kakori Kebab": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Shami Kebab": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Lucknowi Chaat": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Aloo Tikki": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Raj Kachori": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kachoris": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jalebi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Imarti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kulfi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Thandai": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Lassi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Chole Bhature": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mattar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Dal Makhani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sarson Ka Saag": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Makki Ki Roti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Gobhi Aloo": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Baingan Bharta": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Tinda Masala": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kaju Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Tikka Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Egg Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Vegetable Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Fried Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Vegetable Fried Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pani Puri": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhel Puri": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sev Puri": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Saag Aloo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Matar Mushroom": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Paneer Butter Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+}},
+
+				
+"Uttarakhand" :		 		
+
+
+
+
+{
+"Kafuli": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Mandua": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Jholi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Phaanu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Bhaang Ki Chutney": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Aloo Tamatar Ka Jhol": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Gahat Ki Dal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kumaoni Raita": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Sisunak Saag": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chainsoo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Ras": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Thhatwani": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Dubuk": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kandali ka saag": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Palak Ka Saag": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chudkani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Gwarphali": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Aloo Ke Gutke": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Urad Dal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhatt Ki Churdkani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Sani Hui Maa": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kumaoni Mutton Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Egg Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Vegetable Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Saag Aloo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Matar Mushroom": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Paneer Butter Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Naan Bread": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Roti": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Paratha": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Puri": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kheer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jalebi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Imarti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kulfi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+}},
+
+
+				
+"West Bengal":		 		
+
+
+{
+"Jhol or Bhuna": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Shukto": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mishti Doi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Rasgulla": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chingri Malai Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kosha Mangsho": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Bhapa Ilish": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Shorshe Ilish": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Macher Jhol": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Posto": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Bhaat": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Dal": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Alu Bhaja": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Beguni": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Telebhaja": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Dahi Vada": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Puchka": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Jhal Muri": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Aloo Tikki": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Cholar Dal": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Luchi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Radhaballavi": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Koraishutir Kochuri": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Shukto": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Matar Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Saag Aloo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Matar Mushroom": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Paneer Butter Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Naan Bread": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Roti": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Paratha": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Puri": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kheer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Jalebi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Imarti": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kulfi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+}
+},
+
+
+				
+				
+"odisha"	:			
+
+
+
+
+{
+"Pakhala": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Dalma": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Santula": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Khichdi": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Pani Puri": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Guguni": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Aloo Dum": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Matta": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Badi Chura": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kanika": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Khaja": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Malpua": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Rasabali": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chhena Jalebi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chhena Kheeri": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Dahi Vada": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Alu Bharta": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Baingan Bharta": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Bhendi Bharta": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Chana Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chana Saag": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Dal Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Fish Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Mutton Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Palak Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Paneer Tikka": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rajma Masala": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Saag Aloo": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Saag Paneer": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Samosa": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Singada": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Tamatar Curry": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Vegetable Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Vegetable Fried Rice": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chhena Poda": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kakara Pitha": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Enduri Pitha": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Mudhi Pitha": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+}
+},
+
+
+				
+"Tirupura" :				
+
+{
+"Idli": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Dosa": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sambar": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chutney": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Unknown Dish 28": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Pongal": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Rasam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kootu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Avial": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Olan": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Erissery": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Pulissery": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Moru Curry": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Thoran": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Meen Moilee": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chicken Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Beef Fry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Appam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Puttu": {
+"green_water": 100,
+"blue_water": 300,
+"grey_water": 300
+},
+"Idiyappam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Palappam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kallappam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Pathiri": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Pazham Pori": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Unniyappam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Achappam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Kuzhalappam": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Churuttu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Thalassery Biryani": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Karimeen Pollichathu": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Chemmeen Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Koottu Curry": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Ulli Theeyal": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Pachadi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Injipuli": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Narthangai Pachadi": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Mambazha Pulissery": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+},
+"Kaya Varuthathu": {
+"green_water": 50,
+"blue_water": 350,
+"grey_water": 350
+},
+"Sadya": {
+"green_water": 100,
+"blue_water": 400,
+"grey_water": 400
+}
+},
+
+				
+		
+"Andaman and Nicobar Islands" :				
+{
+"Coconut Rice": {
+"green_water": 194,
+"blue_water": 346,
+"grey_water": 346
+},
+"Seafood Curry": {
+"green_water": 742,
+"blue_water": 1134,
+"grey_water": 1134
+},
+"Papadum": {
+"green_water": 94,
+"blue_water": 153,
+"grey_water": 153
+},
+"Andaman Chicken Masala": {
+"green_water": 972,
+"blue_water": 1464,
+"grey_water": 1464
+},
+"Nicobarese Rice Cakes": {
+"green_water": 242,
+"blue_water": 463,
+"grey_water": 463
+}},
+
+				
+"Chandigarh" :				
+{
+"Sarson Ka Saag": {
+"green_water": 143,
+"blue_water": 264,
+"grey_water": 264
+},
+"Makki Ki Roti": {
+"green_water": 129,
+"blue_water": 221,
+"grey_water": 221
+},
+"Chana Masala": {
+"green_water": 351,
+"blue_water": 645,
+"grey_water": 645
+},
+"Rajma Chawal": {
+"green_water": 234,
+"blue_water": 383,
+"grey_water": 383
+},
+"Kadai Chicken": {
+"green_water": 742,
+"blue_water": 1134,
+"grey_water": 1134
+}
+},
+				
+"Dadra and Nagar Haveli"	:			
+{
+"Dhokli": {
+"green_water": 94,
+"blue_water": 153,
+"grey_water": 153
+},
+"Varai Rice": {
+"green_water": 194,
+"blue_water": 346,
+"grey_water": 346
+},
+"Kachri": {
+"green_water": 129,
+"blue_water": 221,
+"grey_water": 221
+},
+"Kokum Chutney": {
+"green_water": 143,
+"blue_water": 264,
+"grey_water": 264
+},
+"Gujarati-style Kadhi": {
+"green_water": 234,
+"blue_water": 383,
+"grey_water": 383
+}},
+
+				
+"Daman and Diu" :				
+
+
+{
+"Fish Curry": {
+"green_water": 742,
+"blue_water": 1134,
+"grey_water": 1134
+},
+"Coconut Rice": {
+"green_water": 194,
+"blue_water": 346,
+"grey_water": 346
+},
+"Laddu": {
+"green_water": 129,
+"blue_water": 221,
+"grey_water": 221
+},
+"Gujarati-style Thali": {
+"green_water": 351,
+"blue_water": 645,
+"grey_water": 645
+},
+"Dhokla": {
+"green_water": 94,
+"blue_water": 153,
+"grey_water": 153
+}
+},	
+"Lakshadweep"	:			
+
+{
+"Coconut Rice": {
+"green_water": 194,
+"blue_water": 346,
+"grey_water": 346
+},
+"Mas Hopper": {
+"green_water": 742,
+"blue_water": 1134,
+"grey_water": 1134
+},
+"Biryani": {
+"green_water": 351,
+"blue_water": 645,
+"grey_water": 645
+},
+"Coconut Chutney": {
+"green_water": 143,
+"blue_water": 264,
+"grey_water": 264
+},
+"Pittu": {
+"green_water": 94,
+"blue_water": 153,
+"grey_water": 153
+}
+},
+				
+"Delhi" :				
+{
+"Butter Chicken": {
+"green_water": 972,
+"blue_water": 1464,
+"grey_water": 1464
+},
+"Chole Bhature": {
+"green_water": 351,
+"blue_water": 645,
+"grey_water": 645
+},
+"Naan Bread": {
+"green_water": 129,
+"blue_water": 221,
+"grey_water": 221
+},
+"Tandoori Chicken": {
+"green_water": 742,
+"blue_water": 1134,
+"grey_water": 1134
+},
+"Raj Kachori": {
+"green_water": 234,
+"blue_water": 383,
+"grey_water": 383
+}
+},
+"Puducherry" :				
+
+{
+"French-inspired Crepes": {
+"green_water": 94,
+"blue_water": 153,
+"grey_water": 153
+},
+"Sambar": {
+"green_water": 143,
+"blue_water": 264,
+"grey_water": 264
+},
+"Dosa": {
+"green_water": 129,
+"blue_water": 221,
+"grey_water": 221
+},
+"Idli": {
+"green_water": 94,
+"blue_water": 153,
+"grey_water": 153
+},
+"Pongal": {
+"green_water": 194,
+"blue_water": 346,
+"grey_water": 346
+}
+},
+				
+"Jammu and Kashmir" :			
+
+{
+"Rogan Josh (Lamb Curry)": {
+"green_water": 1092,
+"blue_water": 1644,
+"grey_water": 1644
+},
+"Gushtaba (Yogurt-based Meat Curry)": {
+"green_water": 944,
+"blue_water": 1354,
+"grey_water": 1354
+},
+"Dum Aloo (Potato Curry)": {
+"green_water": 234,
+"blue_water": 383,
+"grey_water": 383
+},
+"Kashmiri Naan": {
+"green_water": 129,
+"blue_water": 221,
+"grey_water": 221
+},
+"Shufta (Skewered Meat Snack)": {
+"green_water": 1034,
+"blue_water": 1542,
+"grey_water": 1542
+}}
+            }
+
+
+            const stateSelect = document.getElementById('state');
+            const dishSelect = document.getElementById('dish');
+            const quantityInput = document.getElementById('quantity');
+            const resultsDiv = document.getElementById('results');
+            const greenWaterSpan = document.getElementById('greenWater');
+            const blueWaterSpan = document.getElementById('blueWater');
+            const greyWaterSpan = document.getElementById('greyWater');
+            const totalWaterSpan = document.getElementById('totalWater');
+            const chartCanvas = document.getElementById('chart');
+
+            let chartInstance = null;
+
+            // Populate the state dropdown
+            Object.keys(states).forEach(state => {
+                const option = document.createElement('option');
+                option.value = state;
+                option.textContent = state;
+                stateSelect.appendChild(option);
+            });
+
+            // Enable the dish dropdown once a state is selected
+            stateSelect.addEventListener('change', function () {
+                dishSelect.disabled = false;
+                dishSelect.innerHTML = '<option value="" disabled selected>Select a dish</option>';
+                
+                const selectedState = stateSelect.value;
+                const dishes = Object.keys(states[selectedState]);
+                
+                dishes.forEach(dish => {
+                    const option = document.createElement('option');
+                    option.value = dish;
+                    option.textContent = dish;
+                    dishSelect.appendChild(option);
+                });
+            });
+
+            // Handle form submission
+            document.getElementById('dishForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const selectedState = stateSelect.value;
+                const selectedDish = dishSelect.value;
+                const quantity = parseFloat(quantityInput.value);
+                
+                if (selectedState && selectedDish && quantity > 0) {
+                    const dishData = states[selectedState][selectedDish];
+                    const greenWater = dishData.green_water * quantity;
+                    const blueWater = dishData.blue_water * quantity;
+                    const greyWater = dishData.grey_water * quantity;
+                    const totalWater = greenWater + blueWater + greyWater;
+
+                    greenWaterSpan.textContent = greenWater.toFixed(2);
+                    blueWaterSpan.textContent = blueWater.toFixed(2);
+                    greyWaterSpan.textContent = greyWater.toFixed(2);
+                    totalWaterSpan.textContent = totalWater.toFixed(2);
+
+                    resultsDiv.classList.remove('hidden');
+
+                    // Create chart
+                    if (chartInstance) {
+                        chartInstance.destroy();
+                    }
+
+                    chartInstance = new Chart(chartCanvas, {
+                        type: 'pie',
+                        data: {
+                            labels: ['Green Water', 'Blue Water', 'Grey Water'],
+                            datasets: [{
+                                data: [greenWater, blueWater, greyWater],
+                                backgroundColor: ['#4CAF50', '#2196F3', '#FF9800'],
+                                borderColor: '#fff',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
